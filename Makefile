@@ -12,6 +12,6 @@ release:
 		$(shell git rev-parse --abbrev-ref HEAD) $(VERSION)
 
 clean:
-	rm -f build
+	rm -rf build release
 
-.PHONY: release build
+.PHONY: release clean
