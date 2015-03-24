@@ -1,0 +1,10 @@
+dependencies:
+  pre:
+    - go get github.com/tools/godep
+  override:
+    - make
+
+test:
+  override:
+    - godep go test ./...
+
