@@ -18,7 +18,7 @@ access to the UI server, not the actual API servers.
 ## Running
 
 ```
-Usage of ./build/kuisp-linux-amd64:
+Usage of kuisp:
       --ca-file=[]: CA files used to verify proxied server certificates
   -c, --config-file=[]: The configuration files to create in the form "<template>=<output>"
   -p, --port=80: The port to listen on
