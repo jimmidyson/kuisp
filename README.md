@@ -4,7 +4,7 @@ KUISP (pronounced "kwisp") is a utility to simplify the
 serving of static HTML/JavaScript UIs, backed by possibly
 multiple RESTful API services. KUISP does the following:
 
-* serve static content from the speficied directory
+* serve static content from the speicified directory
 * use [Golang templates](http://golang.org/pkg/text/template/)
 to create configuration files from specified templates &
 environment variables
