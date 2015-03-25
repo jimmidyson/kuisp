@@ -3,6 +3,10 @@
 	"GoVersion": "go1.3.3",
 	"Deps": [
 		{
+			"ImportPath": "github.com/bradfitz/http2",
+			"Rev": "2609cc0d65ebda013df59aaa43b9b6f3a7a686f5"
+		},
+		{
 			"ImportPath": "github.com/gorilla/handlers",
 			"Rev": "4ef72b2795a418935d497c8db213080be06f8850"
 		},
