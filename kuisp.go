@@ -17,13 +17,15 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"strconv"
 
+	"github.com/bradfitz/http2"
 	"github.com/gorilla/handlers"
 	flag "github.com/spf13/pflag"
 )
@@ -34,6 +36,9 @@ type Options struct {
 	StaticPrefix string
 	Services     services
 	Configs      configs
+	CAFiles      caFiles
+	TlsCertFile  string
+	TlsKeyFile   string
 }
 
 var options = &Options{}
@@ -44,6 +49,9 @@ func initFlags() {
 	flag.StringVar(&options.StaticPrefix, "www-prefix", "/", "Prefix to serve static files on")
 	flag.VarP(&options.Services, "service", "s", "The Kubernetes services to proxy to in the form \"<prefix>=<serviceUrl>\"")
 	flag.VarP(&options.Configs, "config-file", "c", "The configuration files to create in the form \"<template>=<output>\"")
+	flag.Var(&options.CAFiles, "ca-file", "CA files used to verify proxied server certificates")
+	flag.StringVar(&options.TlsCertFile, "tls-cert", "", "Certificate file to use to serve using TLS")
+	flag.StringVar(&options.TlsKeyFile, "tls-key", "", "Certificate file to use to serve using TLS")
 	flag.Parse()
 }
 
@@ -59,9 +67,25 @@ func main() {
 	}
 
 	if len(options.Services) > 0 {
+		tlsConfig := &tls.Config{}
+		transport := &http.Transport{TLSClientConfig: tlsConfig}
+		if len(options.CAFiles) > 0 {
+			for _, caFile := range options.CAFiles {
+				// Load our trusted certificate path
+				pemData, err := ioutil.ReadFile(caFile)
+				if err != nil {
+					log.Fatal("Couldn't read CA file, ", caFile, ": ", err)
+				}
+				if ok := tlsConfig.RootCAs.AppendCertsFromPEM(pemData); !ok {
+					log.Fatal("Couldn't load PEM data from CA file, ", caFile)
+				}
+			}
+		}
 		for _, serviceDef := range options.Services {
 			fmt.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
-			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, httputil.NewSingleHostReverseProxy(serviceDef.url))))
+			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
+			rp.Transport = transport
+			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, rp)))
 		}
 		fmt.Println()
 	}
@@ -71,5 +95,16 @@ func main() {
 
 	fmt.Printf("Listening on :%d\n", options.Port)
 	fmt.Println()
-	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(options.Port), nil))
+
+	srv := &http.Server{
+		Addr: fmt.Sprintf(":%d", options.Port),
+	}
+	http2.ConfigureServer(srv, &http2.Server{})
+	srv.Handler = http.DefaultServeMux
+
+	if len(options.TlsCertFile) > 0 && len(options.TlsKeyFile) > 0 {
+		log.Fatal(srv.ListenAndServeTLS(options.TlsCertFile, options.TlsKeyFile))
+	} else {
+		log.Fatal(srv.ListenAndServe())
+	}
 }

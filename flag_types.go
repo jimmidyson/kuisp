@@ -80,3 +80,18 @@ func (s *configs) Set(value string) error {
 func (s *configs) Type() string {
 	return "configs"
 }
+
+type caFiles []string
+
+func (s *caFiles) String() string {
+	return fmt.Sprintf("%v", *s)
+}
+
+func (s *caFiles) Set(value string) error {
+	options.CAFiles = append(options.CAFiles, value)
+	return nil
+}
+
+func (s *caFiles) Type() string {
+	return "configs"
+}
