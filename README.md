@@ -19,10 +19,12 @@ access to the UI server, not the actual API servers.
 
 ```
 Usage of kuisp:
-      --ca-file=[]: CA files used to verify proxied server certificates
+  --ca-cert=[]: CA certs used to verify proxied server certificates
   -c, --config-file=[]: The configuration files to create in the form "<template>=<output>"
+  -d, --default-page="": Default page to send if page not found
   -p, --port=80: The port to listen on
   -s, --service=[]: The Kubernetes services to proxy to in the form "<prefix>=<serviceUrl>"
+      --skip-cert-validation=false: Skip remote certificate validation - dangerous!
       --tls-cert="": Certificate file to use to serve using TLS
       --tls-key="": Certificate file to use to serve using TLS
   -w, --www=".": Directory to serve static files from
