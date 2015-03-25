@@ -17,12 +17,11 @@ access to the UI server, not the actual API servers.
 
 ```
 Usage of ./build/kuisp:
-  -c, --config-file="": The output config file
-  -t, --config-template="": The template file to create the specified config file from
+  -c, --config-file=[]: The configuration files to create in the form "<template>=<output>"
   -p, --port=80: The port to listen on
   -s, --service=[]: The Kubernetes services to proxy to in the form "<prefix>=<serviceUrl>"
   -w, --www=".": Directory to serve static files from
-      --www-prefix="/": Prefix to serve static files on"</serviceUrl></prefix>"
+      --www-prefix="/": Prefix to serve static files on
 ```
 
 ### Service proxying
