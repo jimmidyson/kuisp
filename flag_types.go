@@ -81,17 +81,17 @@ func (s *configs) Type() string {
 	return "configs"
 }
 
-type caFiles []string
+type caCerts []string
 
-func (s *caFiles) String() string {
+func (s *caCerts) String() string {
 	return fmt.Sprintf("%v", *s)
 }
 
-func (s *caFiles) Set(value string) error {
-	options.CAFiles = append(options.CAFiles, value)
+func (s *caCerts) Set(value string) error {
+	options.CACerts = append(options.CACerts, value)
 	return nil
 }
 
-func (s *caFiles) Type() string {
+func (s *caCerts) Type() string {
 	return "configs"
 }

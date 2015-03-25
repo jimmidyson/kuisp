@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,14 +32,15 @@ import (
 )
 
 type Options struct {
-	Port         int
-	StaticDir    string
-	StaticPrefix string
-	Services     services
-	Configs      configs
-	CAFiles      caFiles
-	TlsCertFile  string
-	TlsKeyFile   string
+	Port               int
+	StaticDir          string
+	StaticPrefix       string
+	Services           services
+	Configs            configs
+	CACerts            caCerts
+	SkipCertValidation bool
+	TlsCertFile        string
+	TlsKeyFile         string
 }
 
 var options = &Options{}
@@ -49,9 +51,10 @@ func initFlags() {
 	flag.StringVar(&options.StaticPrefix, "www-prefix", "/", "Prefix to serve static files on")
 	flag.VarP(&options.Services, "service", "s", "The Kubernetes services to proxy to in the form \"<prefix>=<serviceUrl>\"")
 	flag.VarP(&options.Configs, "config-file", "c", "The configuration files to create in the form \"<template>=<output>\"")
-	flag.Var(&options.CAFiles, "ca-file", "CA files used to verify proxied server certificates")
+	flag.Var(&options.CACerts, "ca-cert", "CA certs used to verify proxied server certificates")
 	flag.StringVar(&options.TlsCertFile, "tls-cert", "", "Certificate file to use to serve using TLS")
 	flag.StringVar(&options.TlsKeyFile, "tls-key", "", "Certificate file to use to serve using TLS")
+	flag.BoolVar(&options.SkipCertValidation, "skip-cert-validation", false, "Skip remote certificate validation - dangerous!")
 	flag.Parse()
 }
 
@@ -67,10 +70,13 @@ func main() {
 	}
 
 	if len(options.Services) > 0 {
-		tlsConfig := &tls.Config{}
+		tlsConfig := &tls.Config{
+			RootCAs:            x509.NewCertPool(),
+			InsecureSkipVerify: options.SkipCertValidation,
+		}
 		transport := &http.Transport{TLSClientConfig: tlsConfig}
-		if len(options.CAFiles) > 0 {
-			for _, caFile := range options.CAFiles {
+		if len(options.CACerts) > 0 {
+			for _, caFile := range options.CACerts {
 				// Load our trusted certificate path
 				pemData, err := ioutil.ReadFile(caFile)
 				if err != nil {
