@@ -19,6 +19,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -39,6 +40,10 @@ func createConfig(templateFile string, outputFile string) {
 	t, err := template.ParseFiles(templateFile)
 	if err != nil {
 		log.Fatal(err)
+	}
+	dir := filepath.Dir(outputFile)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		os.MkdirAll(dir, 0755)
 	}
 	file, err := os.Create(outputFile)
 	if err != nil {
