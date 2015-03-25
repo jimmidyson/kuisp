@@ -15,6 +15,7 @@ access to the UI server, not the actual API servers.
 
 ## Running
 
+```
 Usage of ./build/kuisp:
   -c, --config-file="": The output config file
   -t, --config-template="": The template file to create the specified config file from
@@ -22,6 +23,7 @@ Usage of ./build/kuisp:
   -s, --service=[]: The Kubernetes services to proxy to in the form "<prefix>=<serviceUrl>"
   -w, --www=".": Directory to serve static files from
       --www-prefix="/": Prefix to serve static files on"</serviceUrl></prefix>"
+```
 
 ### Service proxying
 
