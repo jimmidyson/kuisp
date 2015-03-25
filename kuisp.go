@@ -35,6 +35,7 @@ type Options struct {
 	Port               int
 	StaticDir          string
 	StaticPrefix       string
+	DefaultPage        string
 	Services           services
 	Configs            configs
 	CACerts            caCerts
@@ -49,6 +50,7 @@ func initFlags() {
 	flag.IntVarP(&options.Port, "port", "p", 80, "The port to listen on")
 	flag.StringVarP(&options.StaticDir, "www", "w", ".", "Directory to serve static files from")
 	flag.StringVar(&options.StaticPrefix, "www-prefix", "/", "Prefix to serve static files on")
+	flag.StringVarP(&options.DefaultPage, "default-page", "d", "", "Default page to send if page not found")
 	flag.VarP(&options.Services, "service", "s", "The Kubernetes services to proxy to in the form \"<prefix>=<serviceUrl>\"")
 	flag.VarP(&options.Configs, "config-file", "c", "The configuration files to create in the form \"<template>=<output>\"")
 	flag.Var(&options.CACerts, "ca-cert", "CA certs used to verify proxied server certificates")
@@ -96,8 +98,14 @@ func main() {
 		fmt.Println()
 	}
 
-	fs := http.FileServer(http.Dir(options.StaticDir))
-	http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, fs))
+	httpDir := http.Dir(options.StaticDir)
+	fs := http.FileServer(httpDir)
+
+	if len(options.DefaultPage) > 0 {
+		http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, defaultPageHandler(options.DefaultPage, httpDir, fs)))
+	} else {
+		http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, fs))
+	}
 
 	fmt.Printf("Listening on :%d\n", options.Port)
 	fmt.Println()
@@ -113,4 +121,18 @@ func main() {
 	} else {
 		log.Fatal(srv.ListenAndServe())
 	}
+}
+
+func defaultPageHandler(defaultPage string, httpDir http.Dir, fsHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := httpDir.Open(r.URL.Path); err != nil {
+			if defaultFile, err := httpDir.Open(defaultPage); err == nil {
+				if stat, err := defaultFile.Stat(); err == nil {
+					http.ServeContent(w, r, stat.Name(), stat.ModTime(), defaultFile)
+				}
+			}
+		} else {
+			fsHandler.ServeHTTP(w, r)
+		}
+	})
 }
