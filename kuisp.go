@@ -17,6 +17,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -49,20 +50,26 @@ func initFlags() {
 func main() {
 	initFlags()
 
-	if len(options.Services) > 0 {
-		for _, serviceDef := range options.Services {
-			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, httputil.NewSingleHostReverseProxy(serviceDef.url))))
-		}
-	}
-
 	if len(options.Configs) > 0 {
 		for _, configDef := range options.Configs {
+			fmt.Printf("Creating config file:  %v => %v\n", configDef.template, configDef.output)
 			createConfig(configDef.template, configDef.output)
 		}
+		fmt.Println()
+	}
+
+	if len(options.Services) > 0 {
+		for _, serviceDef := range options.Services {
+			fmt.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
+			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, httputil.NewSingleHostReverseProxy(serviceDef.url))))
+		}
+		fmt.Println()
 	}
 
 	fs := http.FileServer(http.Dir(options.StaticDir))
 	http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, fs))
 
+	fmt.Printf("Listening on :%d\n", options.Port)
+	fmt.Println()
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(options.Port), nil))
 }
