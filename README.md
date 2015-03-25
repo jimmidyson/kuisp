@@ -9,6 +9,8 @@ multiple RESTful API services. KUISP does the following:
 to create configuration files from specified templates &
 environment variables
 * sets up reverse proxies to the specified services
+* http/2 server if TLS certificate/key is specified
+* configurable CA certificates for remote TLS services
 
 The benefit this brings is that browser clients only need network
 access to the UI server, not the actual API servers.
@@ -16,10 +18,13 @@ access to the UI server, not the actual API servers.
 ## Running
 
 ```
-Usage of ./build/kuisp:
+Usage of ./build/kuisp-linux-amd64:
+      --ca-file=[]: CA files used to verify proxied server certificates
   -c, --config-file=[]: The configuration files to create in the form "<template>=<output>"
   -p, --port=80: The port to listen on
   -s, --service=[]: The Kubernetes services to proxy to in the form "<prefix>=<serviceUrl>"
+      --tls-cert="": Certificate file to use to serve using TLS
+      --tls-key="": Certificate file to use to serve using TLS
   -w, --www=".": Directory to serve static files from
       --www-prefix="/": Prefix to serve static files on
 ```
@@ -51,7 +56,7 @@ service definitions:
 Note that you can use relative or absolute paths for both templates & output files. Again,
 you can use environment variable expansion for any values:
 
-    -c '${TEMPLATE}=${TEMPLATE}'
+    -c '${TEMPLATE}=${OUTPUT}'
 
 The only variables that are available in the template for
 processing are environment variables & are accessed like this:
