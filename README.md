@@ -1,6 +1,6 @@
 # KUISP - Kubernetes UI & Service Proxy
 
-KUISP (pronounced "kwisp" ;)) is a utility to simplify the
+KUISP (pronounced "kwisp") is a utility to simplify the
 serving of static HTML/JavaScript UIs, backed by possibly
 multiple RESTful API services. KUISP does the following:
 
