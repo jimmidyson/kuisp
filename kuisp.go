@@ -20,8 +20,10 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strconv"
 
+	"github.com/gorilla/handlers"
 	flag "github.com/spf13/pflag"
 )
 
@@ -49,7 +51,7 @@ func main() {
 
 	if len(options.Services) > 0 {
 		for _, serviceDef := range options.Services {
-			http.Handle(serviceDef.prefix, http.StripPrefix(serviceDef.prefix, httputil.NewSingleHostReverseProxy(serviceDef.url)))
+			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, httputil.NewSingleHostReverseProxy(serviceDef.url))))
 		}
 	}
 
@@ -60,7 +62,7 @@ func main() {
 	}
 
 	fs := http.FileServer(http.Dir(options.StaticDir))
-	http.Handle(options.StaticPrefix, fs)
+	http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, fs))
 
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(options.Port), nil))
 }

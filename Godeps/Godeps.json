@@ -1,7 +1,11 @@
 {
-	"ImportPath": "github.com/jimmidyson/kui",
+	"ImportPath": "github.com/jimmidyson/kuisp",
 	"GoVersion": "go1.3.3",
 	"Deps": [
+		{
+			"ImportPath": "github.com/gorilla/handlers",
+			"Rev": "4ef72b2795a418935d497c8db213080be06f8850"
+		},
 		{
 			"ImportPath": "github.com/spf13/pflag",
 			"Rev": "11b7cf8387a31f278486eaad758162830eca8c73"
