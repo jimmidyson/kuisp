@@ -2,4 +2,5 @@ build/
 release/
 /*.key
 /*.crt
+*.svg
 

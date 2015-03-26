@@ -42,6 +42,7 @@ type Options struct {
 	SkipCertValidation bool
 	TlsCertFile        string
 	TlsKeyFile         string
+	AccessLogging      bool
 }
 
 var options = &Options{}
@@ -57,6 +58,7 @@ func initFlags() {
 	flag.StringVar(&options.TlsCertFile, "tls-cert", "", "Certificate file to use to serve using TLS")
 	flag.StringVar(&options.TlsKeyFile, "tls-key", "", "Certificate file to use to serve using TLS")
 	flag.BoolVar(&options.SkipCertValidation, "skip-cert-validation", false, "Skip remote certificate validation - dangerous!")
+	flag.BoolVarP(&options.AccessLogging, "--access-logging", "l", false, "Enable access logging")
 	flag.Parse()
 }
 
@@ -93,7 +95,7 @@ func main() {
 			fmt.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
 			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
 			rp.Transport = transport
-			http.Handle(serviceDef.prefix, handlers.CombinedLoggingHandler(os.Stdout, http.StripPrefix(serviceDef.prefix, rp)))
+			http.Handle(serviceDef.prefix, http.StripPrefix(serviceDef.prefix, rp))
 		}
 		fmt.Println()
 	}
@@ -102,19 +104,26 @@ func main() {
 	fs := http.FileServer(httpDir)
 
 	if len(options.DefaultPage) > 0 {
-		http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, defaultPageHandler(options.DefaultPage, httpDir, fs)))
+		http.Handle(options.StaticPrefix, defaultPageHandler(options.DefaultPage, httpDir, fs))
 	} else {
-		http.Handle(options.StaticPrefix, handlers.CombinedLoggingHandler(os.Stdout, fs))
+		http.Handle(options.StaticPrefix, fs)
 	}
 
 	fmt.Printf("Listening on :%d\n", options.Port)
 	fmt.Println()
 
+	registerMimeTypes()
+
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%d", options.Port),
 	}
 	http2.ConfigureServer(srv, &http2.Server{})
-	srv.Handler = http.DefaultServeMux
+
+	if options.AccessLogging {
+		srv.Handler = handlers.CombinedLoggingHandler(os.Stdout, http.DefaultServeMux)
+	} else {
+		srv.Handler = http.DefaultServeMux
+	}
 
 	if len(options.TlsCertFile) > 0 && len(options.TlsKeyFile) > 0 {
 		log.Fatal(srv.ListenAndServeTLS(options.TlsCertFile, options.TlsKeyFile))
