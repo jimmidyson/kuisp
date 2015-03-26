@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"time"
 
 	"github.com/bradfitz/http2"
 	"github.com/gorilla/handlers"
@@ -36,6 +37,7 @@ type Options struct {
 	StaticDir          string
 	StaticPrefix       string
 	DefaultPage        string
+	StaticCacheMaxAge  time.Duration
 	Services           services
 	Configs            configs
 	CACerts            caCerts
@@ -51,6 +53,7 @@ func initFlags() {
 	flag.IntVarP(&options.Port, "port", "p", 80, "The port to listen on")
 	flag.StringVarP(&options.StaticDir, "www", "w", ".", "Directory to serve static files from")
 	flag.StringVar(&options.StaticPrefix, "www-prefix", "/", "Prefix to serve static files on")
+	flag.DurationVar(&options.StaticCacheMaxAge, "max-age", 0, "Set the Cache-Control header for static content with the max-age set to this value, e.g. 24h. Must confirm to http://golang.org/pkg/time/#ParseDuration")
 	flag.StringVarP(&options.DefaultPage, "default-page", "d", "", "Default page to send if page not found")
 	flag.VarP(&options.Services, "service", "s", "The Kubernetes services to proxy to in the form \"<prefix>=<serviceUrl>\"")
 	flag.VarP(&options.Configs, "config-file", "c", "The configuration files to create in the form \"<template>=<output>\"")
@@ -102,6 +105,9 @@ func main() {
 
 	httpDir := http.Dir(options.StaticDir)
 	fs := http.FileServer(httpDir)
+	if options.StaticCacheMaxAge > 0 {
+		fs = maxAgeHandler(options.StaticCacheMaxAge.Seconds(), fs)
+	}
 
 	if len(options.DefaultPage) > 0 {
 		http.Handle(options.StaticPrefix, defaultPageHandler(options.DefaultPage, httpDir, fs))
@@ -143,5 +149,12 @@ func defaultPageHandler(defaultPage string, httpDir http.Dir, fsHandler http.Han
 		} else {
 			fsHandler.ServeHTTP(w, r)
 		}
+	})
+}
+
+func maxAgeHandler(seconds float64, h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%g, public, must-revalidate, proxy-revalidate", seconds))
+		h.ServeHTTP(w, r)
 	})
 }
