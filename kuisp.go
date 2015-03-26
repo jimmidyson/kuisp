@@ -45,6 +45,7 @@ type Options struct {
 	TlsCertFile        string
 	TlsKeyFile         string
 	AccessLogging      bool
+	CompressHandler    bool
 }
 
 var options = &Options{}
@@ -61,7 +62,8 @@ func initFlags() {
 	flag.StringVar(&options.TlsCertFile, "tls-cert", "", "Certificate file to use to serve using TLS")
 	flag.StringVar(&options.TlsKeyFile, "tls-key", "", "Certificate file to use to serve using TLS")
 	flag.BoolVar(&options.SkipCertValidation, "skip-cert-validation", false, "Skip remote certificate validation - dangerous!")
-	flag.BoolVarP(&options.AccessLogging, "--access-logging", "l", false, "Enable access logging")
+	flag.BoolVarP(&options.AccessLogging, "access-logging", "l", false, "Enable access logging")
+	flag.BoolVar(&options.CompressHandler, "compress", false, "Enable gzip/deflate response compression")
 	flag.Parse()
 }
 
@@ -125,11 +127,16 @@ func main() {
 	}
 	http2.ConfigureServer(srv, &http2.Server{})
 
-	if options.AccessLogging {
-		srv.Handler = handlers.CombinedLoggingHandler(os.Stdout, http.DefaultServeMux)
-	} else {
-		srv.Handler = http.DefaultServeMux
+	var handler http.Handler = http.DefaultServeMux
+
+	if options.CompressHandler {
+		handler = handlers.CompressHandler(handler)
 	}
+	if options.AccessLogging {
+		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
+	}
+
+	srv.Handler = handler
 
 	if len(options.TlsCertFile) > 0 && len(options.TlsKeyFile) > 0 {
 		log.Fatal(srv.ListenAndServeTLS(options.TlsCertFile, options.TlsKeyFile))

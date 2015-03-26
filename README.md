@@ -19,9 +19,12 @@ access to the UI server, not the actual API servers.
 
 ```
 Usage of kuisp:
-  --ca-cert=[]: CA certs used to verify proxied server certificates
+  -l, --access-logging=false: Enable access logging
+      --ca-cert=[]: CA certs used to verify proxied server certificates
+      --compress=false: Enable gzip/deflate response compression
   -c, --config-file=[]: The configuration files to create in the form "<template>=<output>"
   -d, --default-page="": Default page to send if page not found
+      --max-age=0: Set the Cache-Control header for static content with the max-age set to this value, e.g. 24h. Must confirm to http://golang.org/pkg/time/#ParseDuration
   -p, --port=80: The port to listen on
   -s, --service=[]: The Kubernetes services to proxy to in the form "<prefix>=<serviceUrl>"
       --skip-cert-validation=false: Skip remote certificate validation - dangerous!
