@@ -45,7 +45,7 @@ func (s *services) Set(value string) error {
 			prefix: os.ExpandEnv(splitServiceDef[0]),
 			url:    serviceUrl,
 		}
-		options.Services = append(options.Services, serviceDef)
+		*s = append(*s, serviceDef)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func (s *configs) Set(value string) error {
 		template: os.ExpandEnv(splitConfigDef[0]),
 		output:   os.ExpandEnv(splitConfigDef[1]),
 	}
-	options.Configs = append(options.Configs, configDef)
+	*s = append(*s, configDef)
 	return nil
 }
 
@@ -88,7 +88,7 @@ func (s *caCerts) String() string {
 }
 
 func (s *caCerts) Set(value string) error {
-	options.CACerts = append(options.CACerts, value)
+	*s = append(*s, value)
 	return nil
 }
 
