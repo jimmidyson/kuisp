@@ -112,7 +112,7 @@ func main() {
 	}
 
 	if len(options.DefaultPage) > 0 {
-		http.Handle(options.StaticPrefix, defaultPageHandler(options.DefaultPage, httpDir, staticHandler))
+		staticHandler = defaultPageHandler(options.DefaultPage, httpDir, staticHandler)
 	}
 	if options.CompressHandler {
 		staticHandler = handlers.CompressHandler(staticHandler)
