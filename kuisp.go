@@ -106,16 +106,18 @@ func main() {
 	}
 
 	httpDir := http.Dir(options.StaticDir)
-	fs := http.FileServer(httpDir)
+	staticHandler := http.FileServer(httpDir)
 	if options.StaticCacheMaxAge > 0 {
-		fs = maxAgeHandler(options.StaticCacheMaxAge.Seconds(), fs)
+		staticHandler = maxAgeHandler(options.StaticCacheMaxAge.Seconds(), staticHandler)
 	}
 
 	if len(options.DefaultPage) > 0 {
-		http.Handle(options.StaticPrefix, defaultPageHandler(options.DefaultPage, httpDir, fs))
-	} else {
-		http.Handle(options.StaticPrefix, fs)
+		http.Handle(options.StaticPrefix, defaultPageHandler(options.DefaultPage, httpDir, staticHandler))
 	}
+	if options.CompressHandler {
+		staticHandler = handlers.CompressHandler(staticHandler)
+	}
+	http.Handle(options.StaticPrefix, staticHandler)
 
 	fmt.Printf("Listening on :%d\n", options.Port)
 	fmt.Println()
@@ -129,9 +131,6 @@ func main() {
 
 	var handler http.Handler = http.DefaultServeMux
 
-	if options.CompressHandler {
-		handler = handlers.CompressHandler(handler)
-	}
 	if options.AccessLogging {
 		handler = handlers.CombinedLoggingHandler(os.Stdout, handler)
 	}
