@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -33,19 +34,20 @@ import (
 )
 
 type Options struct {
-	Port               int
-	StaticDir          string
-	StaticPrefix       string
-	DefaultPage        string
-	StaticCacheMaxAge  time.Duration
-	Services           services
-	Configs            configs
-	CACerts            caCerts
-	SkipCertValidation bool
-	TlsCertFile        string
-	TlsKeyFile         string
-	AccessLogging      bool
-	CompressHandler    bool
+	Port                  int
+	StaticDir             string
+	StaticPrefix          string
+	DefaultPage           string
+	StaticCacheMaxAge     time.Duration
+	Services              services
+	FailOnUnknownServices bool
+	Configs               configs
+	CACerts               caCerts
+	SkipCertValidation    bool
+	TlsCertFile           string
+	TlsKeyFile            string
+	AccessLogging         bool
+	CompressHandler       bool
 }
 
 var options = &Options{}
@@ -64,6 +66,7 @@ func initFlags() {
 	flag.BoolVar(&options.SkipCertValidation, "skip-cert-validation", false, "Skip remote certificate validation - dangerous!")
 	flag.BoolVarP(&options.AccessLogging, "access-logging", "l", false, "Enable access logging")
 	flag.BoolVar(&options.CompressHandler, "compress", false, "Enable gzip/deflate response compression")
+	flag.BoolVar(&options.FailOnUnknownServices, "fail-on-unknown-services", false, "Fail on unknown services in DNS")
 	flag.Parse()
 }
 
@@ -97,12 +100,23 @@ func main() {
 			}
 		}
 		for _, serviceDef := range options.Services {
-			fmt.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
+			log.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
+			host, _, err := net.SplitHostPort(serviceDef.url.Host)
+			if err != nil {
+				host = serviceDef.url.Host
+			}
+			if _, err := net.LookupIP(host); err != nil {
+				if options.FailOnUnknownServices {
+					log.Fatalf("Unknown service host: %s", host)
+				} else {
+					log.Printf("Unknown service host: %s", host)
+				}
+			}
 			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
 			rp.Transport = transport
 			http.Handle(serviceDef.prefix, http.StripPrefix(serviceDef.prefix, rp))
 		}
-		fmt.Println()
+		log.Println()
 	}
 
 	httpDir := http.Dir(options.StaticDir)
