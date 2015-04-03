@@ -75,10 +75,10 @@ func main() {
 
 	if len(options.Configs) > 0 {
 		for _, configDef := range options.Configs {
-			fmt.Printf("Creating config file:  %v => %v\n", configDef.template, configDef.output)
+			log.Printf("Creating config file:  %v => %v\n", configDef.template, configDef.output)
 			createConfig(configDef.template, configDef.output)
 		}
-		fmt.Println()
+		log.Println()
 	}
 
 	if len(options.Services) > 0 {
@@ -133,8 +133,8 @@ func main() {
 	}
 	http.Handle(options.StaticPrefix, staticHandler)
 
-	fmt.Printf("Listening on :%d\n", options.Port)
-	fmt.Println()
+	log.Printf("Listening on :%d\n", options.Port)
+	log.Println()
 
 	registerMimeTypes()
 
