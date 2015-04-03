@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/bradfitz/http2"
@@ -100,18 +101,20 @@ func main() {
 			}
 		}
 		for _, serviceDef := range options.Services {
-			log.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
-			host, _, err := net.SplitHostPort(serviceDef.url.Host)
+			actualHost, port, err := validateServiceHost(serviceDef.url.Host)
 			if err != nil {
-				host = serviceDef.url.Host
-			}
-			if _, err := net.LookupIP(host); err != nil {
 				if options.FailOnUnknownServices {
-					log.Fatalf("Unknown service host: %s", host)
+					log.Fatalf("Unknown service host: %s", serviceDef.url.Host)
 				} else {
-					log.Printf("Unknown service host: %s", host)
+					log.Printf("Unknown service host: %s", serviceDef.url.Host)
 				}
+			} else {
+				if len(port) > 0 {
+					actualHost += ":" + port
+				}
+				serviceDef.url.Host = actualHost
 			}
+			log.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
 			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
 			rp.Transport = transport
 			http.Handle(serviceDef.prefix, http.StripPrefix(serviceDef.prefix, rp))
@@ -177,4 +180,27 @@ func maxAgeHandler(seconds float64, h http.Handler) http.Handler {
 		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%g, public, must-revalidate, proxy-revalidate", seconds))
 		h.ServeHTTP(w, r)
 	})
+}
+
+func validateServiceHost(host string) (string, string, error) {
+	actualHost, port, err := net.SplitHostPort(host)
+	if err != nil {
+		actualHost = host
+	}
+	if ip := net.ParseIP(actualHost); ip != nil {
+		return actualHost, port, nil
+	}
+	_, err = net.LookupIP(actualHost)
+	if err != nil {
+		if !strings.Contains(actualHost, ".") {
+			actualHost = strings.ToUpper(actualHost)
+			actualHost = strings.Replace(actualHost, "-", "_", -1)
+			serviceHostEnvVar := os.Getenv(actualHost + "_SERVICE_HOST")
+			if net.ParseIP(serviceHostEnvVar) != nil {
+				return serviceHostEnvVar, os.Getenv(actualHost + "_SERVICE_PORT"), nil
+			}
+		}
+		return "", "", err
+	}
+	return actualHost, port, nil
 }
