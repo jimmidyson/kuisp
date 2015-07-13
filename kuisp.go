@@ -49,6 +49,7 @@ type Options struct {
 	TlsKeyFile            string
 	AccessLogging         bool
 	CompressHandler       bool
+	ServeWww              bool
 }
 
 var options = &Options{}
@@ -68,6 +69,7 @@ func initFlags() {
 	flag.BoolVarP(&options.AccessLogging, "access-logging", "l", false, "Enable access logging")
 	flag.BoolVar(&options.CompressHandler, "compress", false, "Enable gzip/deflate response compression")
 	flag.BoolVar(&options.FailOnUnknownServices, "fail-on-unknown-services", false, "Fail on unknown services in DNS")
+	flag.BoolVar(&options.ServeWww, "serve-www", true, "Whether to serve static content")
 	flag.Parse()
 }
 
@@ -122,19 +124,21 @@ func main() {
 		log.Println()
 	}
 
-	httpDir := http.Dir(options.StaticDir)
-	staticHandler := http.FileServer(httpDir)
-	if options.StaticCacheMaxAge > 0 {
-		staticHandler = maxAgeHandler(options.StaticCacheMaxAge.Seconds(), staticHandler)
-	}
+	if options.ServeWww {
+		httpDir := http.Dir(options.StaticDir)
+		staticHandler := http.FileServer(httpDir)
+		if options.StaticCacheMaxAge > 0 {
+			staticHandler = maxAgeHandler(options.StaticCacheMaxAge.Seconds(), staticHandler)
+		}
 
-	if len(options.DefaultPage) > 0 {
-		staticHandler = defaultPageHandler(options.DefaultPage, httpDir, staticHandler)
+		if len(options.DefaultPage) > 0 {
+			staticHandler = defaultPageHandler(options.DefaultPage, httpDir, staticHandler)
+		}
+		if options.CompressHandler {
+			staticHandler = handlers.CompressHandler(staticHandler)
+		}
+		http.Handle(options.StaticPrefix, staticHandler)
 	}
-	if options.CompressHandler {
-		staticHandler = handlers.CompressHandler(staticHandler)
-	}
-	http.Handle(options.StaticPrefix, staticHandler)
 
 	log.Printf("Listening on :%d\n", options.Port)
 	log.Println()

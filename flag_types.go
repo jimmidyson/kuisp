@@ -35,11 +35,11 @@ func (s *services) String() string {
 
 func (s *services) Set(value string) error {
 	splitServiceDef := strings.Split(value, "=")
-	if len(splitServiceDef) != 2 {
+	if len(splitServiceDef) < 2 {
 		return fmt.Errorf("Invalid service definition: ", value)
 	}
-	if serviceUrl, err := url.Parse(os.ExpandEnv(splitServiceDef[1])); err != nil {
-		return fmt.Errorf("Invalid service URL: ", splitServiceDef[1])
+	if serviceUrl, err := url.Parse(os.ExpandEnv(strings.Join(splitServiceDef[1:], "="))); err != nil {
+		return fmt.Errorf("Invalid service URL: ", splitServiceDef[1:])
 	} else {
 		serviceDef := service{
 			prefix: os.ExpandEnv(splitServiceDef[0]),
