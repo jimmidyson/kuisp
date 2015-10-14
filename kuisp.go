@@ -176,6 +176,7 @@ func defaultPageHandler(defaultPage string, httpDir http.Dir, fsHandler http.Han
 				if defaultFile, err := httpDir.Open(dp); err == nil {
 					if stat, err := defaultFile.Stat(); err == nil {
 						http.ServeContent(w, r, stat.Name(), stat.ModTime(), defaultFile)
+						return
 					}
 				}
 				if len(splitPath) == 0 {
