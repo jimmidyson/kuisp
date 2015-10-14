@@ -30,9 +30,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bradfitz/http2"
 	"github.com/gorilla/handlers"
 	flag "github.com/spf13/pflag"
+	"golang.org/x/net/http2"
 )
 
 type Options struct {
