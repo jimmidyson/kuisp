@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -168,10 +169,20 @@ func main() {
 func defaultPageHandler(defaultPage string, httpDir http.Dir, fsHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := httpDir.Open(r.URL.Path); err != nil {
-			if defaultFile, err := httpDir.Open(defaultPage); err == nil {
-				if stat, err := defaultFile.Stat(); err == nil {
-					http.ServeContent(w, r, stat.Name(), stat.ModTime(), defaultFile)
+			splitPath := strings.Split(r.URL.Path, "/")
+			for {
+				p := append(splitPath, defaultPage)
+				dp := path.Join(p...)
+				if defaultFile, err := httpDir.Open(dp); err == nil {
+					if stat, err := defaultFile.Stat(); err == nil {
+						http.ServeContent(w, r, stat.Name(), stat.ModTime(), defaultFile)
+					}
 				}
+				if len(splitPath) == 0 {
+					http.NotFound(w, r)
+					return
+				}
+				splitPath = splitPath[:len(splitPath)-1]
 			}
 		} else {
 			fsHandler.ServeHTTP(w, r)
