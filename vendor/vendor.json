@@ -1,0 +1,26 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"path": "github.com/bradfitz/http2",
+			"revision": "f8202bc903bda493ebba4aa54922d78430c2c42f",
+			"revisionTime": "2015-05-09T11:24:58-07:00"
+		},
+		{
+			"path": "github.com/bradfitz/http2/hpack",
+			"revision": "f8202bc903bda493ebba4aa54922d78430c2c42f",
+			"revisionTime": "2015-05-09T11:24:58-07:00"
+		},
+		{
+			"path": "github.com/gorilla/handlers",
+			"revision": "4ef72b2795a418935d497c8db213080be06f8850",
+			"revisionTime": "2015-01-30T13:00:09-08:00"
+		},
+		{
+			"path": "github.com/spf13/pflag",
+			"revision": "8e7dc108ab3a1ab6ce6d922bbaff5657b88e8e49",
+			"revisionTime": "2015-08-20T15:54:46-07:00"
+		}
+	]
+}
