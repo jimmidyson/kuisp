@@ -4,3 +4,4 @@ release/
 /*.crt
 *.svg
 
+junit.xml

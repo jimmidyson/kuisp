@@ -33,5 +33,5 @@ dependencies:
 
 test:
   override:
-    - cd "$PROJECT_PATH" && GO15VENDOREXPERIMENT=1 go test ./...
+    - cd "$PROJECT_PATH" && make test
 

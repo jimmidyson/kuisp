@@ -17,6 +17,7 @@
 NAME=kuisp
 VERSION=$(shell cat VERSION)
 GO=GO15VENDOREXPERIMENT=1 go
+pkgs = $(shell $(GO) list ./... | grep -v /vendor/)
 
 local: *.go
 	$(GO) build -ldflags "-X main.Version=$(VERSION)-dev" -o build/kuisp
@@ -34,7 +35,10 @@ release:
 	gh-release create jimmidyson/$(NAME) $(VERSION) \
 		$(shell git rev-parse --abbrev-ref HEAD) $(VERSION)
 
+test:
+	OUTPUT=`$(GO) test -short -race -v $(pkgs)` && echo "$${OUTPUT}" | tee /dev/tty | go-junit-report -set-exit-code > $${CIRCLE_TEST_REPORTS:-.}/junit.xml
+
 clean:
 	rm -rf build release
 
-.PHONY: release clean
+.PHONY: release clean test
