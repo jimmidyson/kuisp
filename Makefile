@@ -16,17 +16,18 @@
 
 NAME=kuisp
 VERSION=$(shell cat VERSION)
+GO=GO15VENDOREXPERIMENT=1 go
 
 local: *.go
-	go build -ldflags "-X main.Version=$(VERSION)-dev" -o build/kuisp
+	$(GO) build -ldflags "-X main.Version=$(VERSION)-dev" -o build/kuisp
 
 release:
 	rm -rf build release && mkdir build release
 	for os in linux freebsd darwin ; do \
-		GOOS=$$os ARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$$os-amd64 ; \
+		GOOS=$$os ARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$$os-amd64 ; \
 		tar --transform 's|^build/||' --transform 's|-.*||' -czvf release/kuisp-$(VERSION)-$$os-amd64.tar.gz build/kuisp-$$os-amd64 README.md LICENSE ; \
 	done
-	GOOS=windows ARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$(VERSION)-windows-amd64.exe
+	GOOS=windows ARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$(VERSION)-windows-amd64.exe
 	zip release/kuisp-$(VERSION)-windows-amd64.zip build/kuisp-$(VERSION)-windows-amd64.exe README.md LICENSE && \
 		echo -e "@ build/kuisp-$(VERSION)-windows-amd64.exe\n@=kuisp.exe"  | zipnote -w release/kuisp-$(VERSION)-windows-amd64.zip
 	go get github.com/progrium/gh-release/...
