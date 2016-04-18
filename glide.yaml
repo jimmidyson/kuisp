@@ -1,0 +1,5 @@
+package: github.com/jimmidyson/kuisp
+import:
+- package: github.com/gorilla/handlers
+- package: github.com/spf13/pflag
+- package: github.com/jackspirou/syscerts

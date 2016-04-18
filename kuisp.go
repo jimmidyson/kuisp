@@ -18,7 +18,6 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,8 +30,8 @@ import (
 	"time"
 
 	"github.com/gorilla/handlers"
+	"github.com/jackspirou/syscerts"
 	flag "github.com/spf13/pflag"
-	"golang.org/x/net/http2"
 )
 
 type Options struct {
@@ -87,7 +86,7 @@ func main() {
 
 	if len(options.Services) > 0 {
 		tlsConfig := &tls.Config{
-			RootCAs:            x509.NewCertPool(),
+			RootCAs:            syscerts.SystemRootsPool(),
 			InsecureSkipVerify: options.SkipCertValidation,
 		}
 		transport := &http.Transport{TLSClientConfig: tlsConfig}
@@ -149,7 +148,6 @@ func main() {
 	srv := &http.Server{
 		Addr: fmt.Sprintf(":%d", options.Port),
 	}
-	http2.ConfigureServer(srv, &http2.Server{})
 
 	var handler http.Handler = http.DefaultServeMux
 

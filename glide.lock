@@ -1,0 +1,10 @@
+hash: c245efa9637f6368ffa2aefbd8e29bea2febf39bbf81ee81a47b5f581863298b
+updated: 2016-04-18T18:01:18.527973291+01:00
+imports:
+- name: github.com/gorilla/handlers
+  version: 3b23fca5105e17c9c6739e339cea6cace41b17e8
+- name: github.com/jackspirou/syscerts
+  version: 5ecaea8f7ec96a0826ced1ff106d30083066bf35
+- name: github.com/spf13/pflag
+  version: 3b23fca5105e17c9c6739e339cea6cace41b17e8
+devImports: []
