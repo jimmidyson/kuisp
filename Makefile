@@ -22,13 +22,18 @@ pkgs = $(shell $(GO) list ./... | grep -v /vendor/)
 local: *.go
 	$(GO) build -ldflags "-X main.Version=$(VERSION)-dev" -o build/kuisp
 
+arm:
+	GOOS=linux GOARCH=arm $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-linux-arm
+
 release:
 	rm -rf build release && mkdir build release
 	for os in linux freebsd darwin ; do \
-		GOOS=$$os ARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$$os-amd64 ; \
-		tar --transform 's|^build/||' --transform 's|-.*||' -czvf release/kuisp-$(VERSION)-$$os-amd64.tar.gz build/kuisp-$$os-amd64 README.md LICENSE ; \
+	GOOS=$$os GOARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$$os-amd64 ; \
+	tar --transform 's|^build/||' --transform 's|-.*||' -czvf release/kuisp-$(VERSION)-$$os-amd64.tar.gz build/kuisp-$$os-amd64 README.md LICENSE ; \
 	done
-	GOOS=windows ARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$(VERSION)-windows-amd64.exe
+	GOOS=linux GOARCH=arm $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-linux-arm
+	tar --transform 's|^build/||' --transform 's|-.*||' -czvf release/kuisp-$(VERSION)-linux-arm.tar.gz build/kuisp-linux-arm README.md LICENSE ; \
+	GOOS=windows GOARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$(VERSION)-windows-amd64.exe
 	zip release/kuisp-$(VERSION)-windows-amd64.zip build/kuisp-$(VERSION)-windows-amd64.exe README.md LICENSE && \
 		echo -e "@ build/kuisp-$(VERSION)-windows-amd64.exe\n@=kuisp.exe"  | zipnote -w release/kuisp-$(VERSION)-windows-amd64.zip
 	go get github.com/progrium/gh-release/...
