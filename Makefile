@@ -28,7 +28,8 @@ arm:
 bump:
 	$(GO) get -u github.com/fabric8io/gobump
 	gobump patch
-	git commit -a -m "Bump version $(VERSION)"
+	git commit -a -m "Bump version ${VERSION}"
+	git push
 
 release: bump
 	$(GO) get -u github.com/progrium/gh-release
