@@ -16,7 +16,8 @@
 
 NAME=kuisp
 VERSION=$(shell cat VERSION)
-GO=GO15VENDOREXPERIMENT=1 go
+GO=CGO_ENABLED=0 GO15VENDOREXPERIMENT=1 go
+GOTEST=GO15VENDOREXPERIMENT=1 go
 pkgs = $(shell $(GO) list ./... | grep -v /vendor/)
 
 local: *.go
@@ -50,8 +51,8 @@ release: pushbump
 		$(shell git rev-parse --abbrev-ref HEAD) $(VERSION)
 
 test:
-	$(GO) get -u github.com/jstemmer/go-junit-report
-	OUTPUT=`$(GO) test -short -race -v $(pkgs)` && echo "$${OUTPUT}" | tee /dev/tty | go-junit-report -set-exit-code > $${CIRCLE_TEST_REPORTS:-.}/junit.xml
+	$(GOTEST) get -u github.com/jstemmer/go-junit-report
+	OUTPUT=`$(GOTEST) test -short -race -v $(pkgs)` && echo "$${OUTPUT}" | tee /dev/tty | go-junit-report -set-exit-code > $${CIRCLE_TEST_REPORTS:-.}/junit.xml
 
 clean:
 	rm -rf build release
