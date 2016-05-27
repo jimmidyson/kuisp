@@ -25,7 +25,12 @@ local: *.go
 arm:
 	GOOS=linux GOARCH=arm $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-linux-arm
 
-release:
+bump:
+	$(GO) get -u github.com/fabric8io/gobump
+	gobump patch
+
+release: bump
+	$(GO) get -u github.com/progrium/gh-release
 	rm -rf build release && mkdir build release
 	for os in linux freebsd darwin ; do \
 	GOOS=$$os GOARCH=amd64 $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-$$os-amd64 ; \
@@ -41,9 +46,10 @@ release:
 		$(shell git rev-parse --abbrev-ref HEAD) $(VERSION)
 
 test:
+	$(GO) get -u github.com/jstemmer/go-junit-report
 	OUTPUT=`$(GO) test -short -race -v $(pkgs)` && echo "$${OUTPUT}" | tee /dev/tty | go-junit-report -set-exit-code > $${CIRCLE_TEST_REPORTS:-.}/junit.xml
 
 clean:
 	rm -rf build release
 
-.PHONY: release clean test
+.PHONY: release clean test bump
