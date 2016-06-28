@@ -49,6 +49,7 @@ type Options struct {
 	TlsKeyFile            string
 	AccessLogging         bool
 	CompressHandler       bool
+	BearerTokenFile       string
 	ServeWww              bool
 }
 
@@ -70,6 +71,7 @@ func initFlags() {
 	flag.BoolVar(&options.CompressHandler, "compress", false, "Enable gzip/deflate response compression")
 	flag.BoolVar(&options.FailOnUnknownServices, "fail-on-unknown-services", false, "Fail on unknown services in DNS")
 	flag.BoolVar(&options.ServeWww, "serve-www", true, "Whether to serve static content")
+	flag.StringVar(&options.BearerTokenFile, "bearer-token", "", "Specify the file to use as the Bearer token for Authorization header")
 	flag.Parse()
 }
 
@@ -119,7 +121,21 @@ func main() {
 			log.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
 			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
 			rp.Transport = transport
-			http.Handle(serviceDef.prefix, http.StripPrefix(serviceDef.prefix, rp))
+			handler := http.StripPrefix(serviceDef.prefix, rp)
+			if len(options.BearerTokenFile) > 0 {
+				data, err := ioutil.ReadFile(options.BearerTokenFile)
+				if err != nil {
+					log.Fatalf("Could not load Bearer token file %s due to %v", options.BearerTokenFile, err)
+				}
+				authHeader := "Bearer " + string(data)
+				oldHandler := handler
+				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					r.Header.Set("Authorization", authHeader)
+					oldHandler.ServeHTTP(w, r)
+				})
+				handler = newHandler
+			}
+			http.Handle(serviceDef.prefix, handler)
 		}
 		log.Println()
 	}
