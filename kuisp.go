@@ -23,7 +23,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"os"
 	"path"
 	"strings"
@@ -32,6 +31,8 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/jackspirou/syscerts"
 	flag "github.com/spf13/pflag"
+	"github.com/vulcand/oxy/forward"
+	"github.com/vulcand/oxy/utils"
 )
 
 type Options struct {
@@ -105,6 +106,20 @@ func main() {
 			}
 		}
 		for _, serviceDef := range options.Services {
+			var dial forward.Dialer
+			if serviceDef.url.Scheme == "https" {
+				dial = func(network, address string) (net.Conn, error) {
+					return tls.Dial(network, address, tlsConfig)
+				}
+			}
+			fwd, err := forward.New(
+				forward.Logger(utils.NewFileLogger(os.Stdout, utils.INFO)),
+				forward.RoundTripper(transport),
+				forward.WebsocketDial(dial),
+			)
+			if err != nil {
+				log.Fatal("Cannot create forwarder:", err)
+			}
 			actualHost, port, err := validateServiceHost(serviceDef.url.Host)
 			if err != nil {
 				if options.FailOnUnknownServices {
@@ -119,25 +134,20 @@ func main() {
 				serviceDef.url.Host = actualHost
 			}
 			log.Printf("Creating service proxy: %v => %v\n", serviceDef.prefix, serviceDef.url.String())
-			rp := httputil.NewSingleHostReverseProxy(serviceDef.url)
-			rp.Transport = transport
-			handler := http.StripPrefix(serviceDef.prefix, rp)
-			if len(options.BearerTokenFile) > 0 {
-				data, err := ioutil.ReadFile(options.BearerTokenFile)
-				if err != nil {
-					log.Fatalf("Could not load Bearer token file %s due to %v", options.BearerTokenFile, err)
+			targetQuery := serviceDef.url.RawQuery
+			handler := http.StripPrefix(serviceDef.prefix, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				req.URL.Scheme = serviceDef.url.Scheme
+				req.URL.Host = serviceDef.url.Host
+				req.URL.Path = singleJoiningSlash(serviceDef.url.Path, req.URL.Path)
+				if targetQuery == "" || req.URL.RawQuery == "" {
+					req.URL.RawQuery = targetQuery + req.URL.RawQuery
+				} else {
+					req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
 				}
-				authHeader := "Bearer " + string(data)
-				oldHandler := handler
-				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					r.Header.Set("Authorization", authHeader)
-					oldHandler.ServeHTTP(w, r)
-				})
-				handler = newHandler
-			}
+				fwd.ServeHTTP(w, req)
+			}))
 			http.Handle(serviceDef.prefix, handler)
 		}
-		log.Println()
 	}
 
 	if options.ServeWww {
@@ -233,4 +243,16 @@ func validateServiceHost(host string) (string, string, error) {
 		return "", "", err
 	}
 	return actualHost, port, nil
+}
+
+func singleJoiningSlash(a, b string) string {
+	aslash := strings.HasSuffix(a, "/")
+	bslash := strings.HasPrefix(b, "/")
+	switch {
+	case aslash && bslash:
+		return a + b[1:]
+	case !aslash && !bslash:
+		return a + "/" + b
+	}
+	return a + b
 }
