@@ -26,15 +26,7 @@ local: *.go
 arm:
 	GOOS=linux GOARCH=arm $(GO) build -ldflags "-X main.Version=$(VERSION)" -o build/kuisp-linux-arm
 
-bump:
-	$(GO) get -u github.com/fabric8io/gobump
-	gobump patch
-
-pushbump: bump
-	git commit -a -m "Bump version ${VERSION}"
-	git push
-
-release: pushbump
+release:
 	$(GO) get -u github.com/progrium/gh-release
 	rm -rf build release && mkdir build release
 	for os in linux freebsd darwin ; do \
