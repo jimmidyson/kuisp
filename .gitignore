@@ -5,3 +5,5 @@ release/
 *.svg
 
 junit.xml
+
+/.idea
