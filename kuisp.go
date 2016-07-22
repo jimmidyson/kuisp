@@ -113,7 +113,7 @@ func main() {
 				}
 			}
 			fwd, err := forward.New(
-				forward.Logger(utils.NewFileLogger(os.Stdout, utils.INFO)),
+				forward.Logger(utils.NewFileLogger(os.Stderr, utils.WARN)),
 				forward.RoundTripper(transport),
 				forward.WebsocketDial(dial),
 			)
@@ -123,9 +123,9 @@ func main() {
 			actualHost, port, err := validateServiceHost(serviceDef.url.Host)
 			if err != nil {
 				if options.FailOnUnknownServices {
-					log.Fatalf("Unknown service host: %s", serviceDef.url.Host)
+					log.Fatalf("Unknown service host: %s\n", serviceDef.url.Host)
 				} else {
-					log.Printf("Unknown service host: %s", serviceDef.url.Host)
+					log.Printf("Unknown service host: %s\n", serviceDef.url.Host)
 				}
 			} else {
 				if len(port) > 0 {
@@ -138,6 +138,7 @@ func main() {
 			handler := http.StripPrefix(serviceDef.prefix, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				req.URL.Scheme = serviceDef.url.Scheme
 				req.URL.Host = serviceDef.url.Host
+				req.RequestURI = ""
 				req.URL.Path = singleJoiningSlash(serviceDef.url.Path, req.URL.Path)
 				if targetQuery == "" || req.URL.RawQuery == "" {
 					req.URL.RawQuery = targetQuery + req.URL.RawQuery
@@ -146,6 +147,23 @@ func main() {
 				}
 				fwd.ServeHTTP(w, req)
 			}))
+
+			if len(options.BearerTokenFile) > 0 {
+				data, err := ioutil.ReadFile(options.BearerTokenFile)
+				if err != nil {
+					log.Fatalf("Could not load Bearer token file %s due to %v", options.BearerTokenFile, err)
+				}
+				authHeader := "Bearer " + string(data)
+				oldHandler := handler
+				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Header.Get("Authorization") == "" {
+						r.Header.Set("Authorization", authHeader)
+					}
+					oldHandler.ServeHTTP(w, r)
+				})
+				handler = newHandler
+			}
+
 			http.Handle(serviceDef.prefix, handler)
 		}
 	}
