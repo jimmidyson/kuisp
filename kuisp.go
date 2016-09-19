@@ -105,7 +105,8 @@ func main() {
 				}
 			}
 		}
-		for _, serviceDef := range options.Services {
+		for i := range options.Services {
+			serviceDef := options.Services[i]
 			var dial forward.Dialer
 			if serviceDef.url.Scheme == "https" {
 				dial = func(network, address string) (net.Conn, error) {
@@ -138,12 +139,15 @@ func main() {
 			handler := http.StripPrefix(serviceDef.prefix, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				req.URL.Scheme = serviceDef.url.Scheme
 				req.URL.Host = serviceDef.url.Host
-				req.RequestURI = ""
 				req.URL.Path = singleJoiningSlash(serviceDef.url.Path, req.URL.Path)
 				if targetQuery == "" || req.URL.RawQuery == "" {
 					req.URL.RawQuery = targetQuery + req.URL.RawQuery
 				} else {
 					req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
+				}
+				req.RequestURI = req.URL.Path
+				if req.URL.RawQuery != "" {
+					req.RequestURI = req.RequestURI + "?" + req.URL.RawQuery
 				}
 				fwd.ServeHTTP(w, req)
 			}))
@@ -153,7 +157,7 @@ func main() {
 				if err != nil {
 					log.Fatalf("Could not load Bearer token file %s due to %v", options.BearerTokenFile, err)
 				}
-				authHeader := "Bearer " + string(data)
+				authHeader := "Bearer " + strings.TrimSpace(string(data))
 				oldHandler := handler
 				newHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if r.Header.Get("Authorization") == "" {
