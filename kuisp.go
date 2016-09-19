@@ -105,7 +105,8 @@ func main() {
 				}
 			}
 		}
-		for _, serviceDef := range options.Services {
+		for i := range options.Services {
+			serviceDef := options.Services[i]
 			var dial forward.Dialer
 			if serviceDef.url.Scheme == "https" {
 				dial = func(network, address string) (net.Conn, error) {
