@@ -138,12 +138,14 @@ func main() {
 			handler := http.StripPrefix(serviceDef.prefix, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 				req.URL.Scheme = serviceDef.url.Scheme
 				req.URL.Host = serviceDef.url.Host
-				req.RequestURI = ""
 				req.URL.Path = singleJoiningSlash(serviceDef.url.Path, req.URL.Path)
 				if targetQuery == "" || req.URL.RawQuery == "" {
 					req.URL.RawQuery = targetQuery + req.URL.RawQuery
 				} else {
 					req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
+				}
+				if req.URL.RawQuery != "" {
+					req.RequestURI = req.URL.Path + "?" + req.URL.RawQuery
 				}
 				fwd.ServeHTTP(w, req)
 			}))
