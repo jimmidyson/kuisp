@@ -38,7 +38,7 @@ func (c *context) Env() map[string]string {
 }
 
 func createConfig(templateFile string, outputFile string) {
-	t, err := template.New("config").Funcs(
+	t, err := template.New(filepath.Base(templateFile)).Funcs(
 		template.FuncMap{
 			"cat": func(f string) (string, error) {
 				s, err := ioutil.ReadFile(f)
@@ -57,6 +57,9 @@ func createConfig(templateFile string, outputFile string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.Execute(file, &context{})
-	file.Close()
+	defer file.Close()
+	err = t.Execute(file, &context{})
+	if err != nil {
+		log.Fatal(err)
+	}
 }
