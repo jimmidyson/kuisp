@@ -17,6 +17,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,7 +38,14 @@ func (c *context) Env() map[string]string {
 }
 
 func createConfig(templateFile string, outputFile string) {
-	t, err := template.ParseFiles(templateFile)
+	t, err := template.New("config").Funcs(
+		template.FuncMap{
+			"cat": func(f string) (string, error) {
+				s, err := ioutil.ReadFile(f)
+				return string(s), err
+			},
+		},
+	).ParseFiles(templateFile)
 	if err != nil {
 		log.Fatal(err)
 	}
