@@ -35,6 +35,7 @@ import (
 	"github.com/vulcand/oxy/utils"
 )
 
+// Options holds the configuration for kuisp.
 type Options struct {
 	Port                  int
 	StaticDir             string

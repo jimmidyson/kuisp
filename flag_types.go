@@ -36,17 +36,17 @@ func (s *services) String() string {
 func (s *services) Set(value string) error {
 	splitServiceDef := strings.Split(value, "=")
 	if len(splitServiceDef) < 2 {
-		return fmt.Errorf("Invalid service definition: ", value)
+		return fmt.Errorf("Invalid service definition: %s", value)
 	}
-	if serviceUrl, err := url.Parse(os.ExpandEnv(strings.Join(splitServiceDef[1:], "="))); err != nil {
-		return fmt.Errorf("Invalid service URL: ", splitServiceDef[1:])
-	} else {
-		serviceDef := service{
-			prefix: os.ExpandEnv(splitServiceDef[0]),
-			url:    serviceUrl,
-		}
-		*s = append(*s, serviceDef)
+	serviceURL, err := url.Parse(os.ExpandEnv(strings.Join(splitServiceDef[1:], "=")))
+	if err != nil {
+		return fmt.Errorf("Invalid service URL: %s", splitServiceDef[1:])
 	}
+	serviceDef := service{
+		prefix: os.ExpandEnv(splitServiceDef[0]),
+		url:    serviceURL,
+	}
+	*s = append(*s, serviceDef)
 	return nil
 }
 
@@ -67,7 +67,7 @@ func (s *configs) String() string {
 func (s *configs) Set(value string) error {
 	splitConfigDef := strings.Split(value, "=")
 	if len(splitConfigDef) != 2 {
-		return fmt.Errorf("Invalid config definition: ", value)
+		return fmt.Errorf("Invalid config definition: %s", value)
 	}
 	configDef := config{
 		template: os.ExpandEnv(splitConfigDef[0]),
